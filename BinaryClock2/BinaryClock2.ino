@@ -9,6 +9,8 @@
 // Pin-assignment based on Arduino Nano pinout:
 // http://pighixxx.com/nanopdf.pdf
 
+#define DEBUG false
+
 #define DCF_PIN 2           // Connection pin to DCF 77 device
 #define DCF_INTERRUPT 0     // Interrupt number associated with pin DCF_PIN
 
@@ -48,21 +50,67 @@ void setup() {
   pinMode(M10, OUTPUT); pinMode(M20, OUTPUT); pinMode(M40, OUTPUT);
   pinMode(M1, OUTPUT); pinMode(M2, OUTPUT); pinMode(M4, OUTPUT); pinMode(M8, OUTPUT);
 
+  // Test LEDs
+  toggleLEDs();
+
   // Setup DCF77:
   DCF.Start();
   Serial.println("Waiting for DCF77 time ... ");
   Serial.println("It will take at least 2 minutes until a first update can be processed.");
 }
 
+int loopCnt = 0;
+bool dcfTimeFound = false;
+bool lastStatus = LOW;
+
 void loop() {
-  delay(1000);
-  time_t DCFtime = 0; //DCF.getTime(); // Check if new DCF77 time is available
-  if (DCFtime != 0)
-  {
-    Serial.println("Time is updated");
-    setTime(DCFtime);
+  //delay(1000);
+  delay(10);
+
+  if(dcfTimeFound == false) {
+    dcfActivityDisplay();
   }
-  digitalClockDisplay();
+
+  if(loopCnt % 100 == 0) {   
+    time_t DCFtime = DCF.getTime(); // Check if new DCF77 time is available
+    if (DCFtime != 0)
+    {
+      Serial.println("Time is updated");
+      setTime(DCFtime);
+      dcfTimeFound = true;
+    } else if (dcfTimeFound == false && !DEBUG) { // not found and never found
+      toggleLEDs();
+    } 
+    if(dcfTimeFound == true) {
+      digitalClockDisplay();
+    }
+    loopCnt = 0;
+  }
+
+  loopCnt++;
+}
+
+void toggleLEDs() {
+  lastStatus = !lastStatus;
+  for(int i = H10; i <= H8; i++) {
+    setLED(i, lastStatus == true ? 0 : 1, "");
+  }
+  for(int i = M10; i <= M8; i++) {
+    if(i != M40) 
+      setLED(i, lastStatus == false ? 0 : 1, "");
+  }
+}
+
+void dcfActivityDisplay(){
+  int sensorValue = digitalRead(DCF_PIN);
+  if(DEBUG) {
+    for(int i = H10; i <= M8; i++) {
+      setLED(i, sensorValue, "");
+    }
+  } else {
+    setLED(M40, sensorValue, "");
+  }
+  
 }
 
 void digitalClockDisplay() {
@@ -93,16 +141,17 @@ void digitalClockDisplay() {
 }
 
 void setLED(int id, int cond, char* name) {
-  bool status = cond != 0;
+  boolean status = cond != 0;
 
   digitalWrite(id, status ? HIGH : LOW);
 
-  //  Serial.print("LED ");
-  //  Serial.print(name);
-  //  Serial.print(": ");
-  //  Serial.print(status ? "on" : "off");
-  //  Serial.println();
+//    Serial.print("LED ");
+//    Serial.print(name);
+//    Serial.print(": ");
+//    Serial.print(status ? "on" : "off");
+//    Serial.println();
 }
+
 
 
 
