@@ -132,7 +132,7 @@ void digitalClockDisplay() {
 
   setLED(M10, (m / 10) & 0x1, "M10");
   setLED(M20, (m / 10) & 0x2, "M20");
-  setLED(M40, (m / 10) & 0x3, "M40");
+  setLED(M40, (m / 10) & 0x4, "M40");
 
   setLED(M1, (m % 10) & 0x1, " M1");
   setLED(M2, (m % 10) & 0x2, " M2");
